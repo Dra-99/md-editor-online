@@ -2,6 +2,9 @@ import React, { useState, useContext, createContext, useEffect, useCallback } fr
 import LeftPane from "../pages/leftPane";
 import RightPane from "../pages/rightPane";
 import "./index.css"
+import { v4 as uuidv4 } from "uuid"
+import moment from "moment"
+import { changeArrToFlatten, changeFlattenToArr } from "../utils/flattenChange";
 
 export const LayoutContext = createContext()
 
@@ -49,6 +52,7 @@ const Layout = () => {
     const [openFileTab, setOpenFileTab] = useState([])
     const [currentOpen, setCurrentOpen] = useState() //当前正在打开的tab
     const [unsaveFiles, setUnSaveFiles] = useState([])
+    const [searchFiles, setSearchFiles] = useState([])
 
     const handleFileSelect = (id) => {
         if (!openFileTab.find(item => item.id === id)) {
@@ -65,18 +69,63 @@ const Layout = () => {
         setCurrentOpen(id)
     }
 
-    const handleFileChange = useCallback((newContent, id) => {
+    const handleFileChange = (newContent, id) => {
         if (!unsaveFiles.includes(id)) {
             setUnSaveFiles([...unsaveFiles, id])
         }
         setFileList(fileList.map(item => {
             if (item.id === id) {
-                item.body = newContent
+                item.body = newContent;
             }
             return item
         }))
-    }, [unsaveFiles, fileList])
+    }
 
+    const deleteFile = (id) => {
+        setFileList(fileList.filter(item => item.id !== id))
+        if (openFileTab.find(item => item.id === id)) {
+            setOpenFileTab(openFileTab.filter(item => item.id !== id))
+        }
+    }
+    console.log(fileList)
+    const editFileName = (newName, id, cb) => {
+        setFileList(fileList.map(item => {
+            if (item.id === id) {
+                item.title = newName;
+                item.isNew = false
+            }
+            return item
+        }))
+        cb && cb()
+    }
+
+    const createFile = () => {
+        if (fileList.find(item => item.isNew)) {
+            return;
+        }
+        const newFileList = [
+            ...fileList,
+            {
+                id: uuidv4(),
+                title: '',
+                body: '## 请输入内容',
+                createAt: moment().format('YYYY-MM-DD hh:mm:ss'),
+                isNew: true
+            }
+        ]
+        setFileList(newFileList)
+        setSearchFiles([])
+    }
+
+    const cancelCreate = () => {
+        setFileList(fileList.filter(item => !item.isNew))
+    }
+
+    // 文件搜索
+    const handleFileSearch = useCallback((searchValue) => {
+        setSearchFiles(fileList.filter(item => item.title.includes(searchValue)));
+    }, [fileList])
+    
     useEffect(() => {
         setCurrentOpen(openFileTab.length > 0 ? openFileTab[openFileTab.length - 1].id : undefined)
     }, [openFileTab])
@@ -86,10 +135,14 @@ const Layout = () => {
             <LayoutContext.Provider value={{
                 handleFileSelect,
                 closeTab,
-                switchSelect
+                switchSelect,
+                deleteFile,
+                editFileName,
+                handleFileSearch,
+                cancelCreate
             }}>
                 <div className="col-3 px-0 overflow-hidden">
-                    <LeftPane fileList={fileList} />
+                    <LeftPane fileList={searchFiles.length ? searchFiles : fileList} createFile={createFile} />
                 </div> 
                 <div className="col-9 right_container">
                     {openFileTab.length ?

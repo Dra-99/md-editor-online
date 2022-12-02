@@ -4,17 +4,12 @@ import FileList from "../../components/FileList"
 import PropTypes from "prop-types"
 import "./index.css"
 
-const leftPane = ({ fileList }) => {
-
-    const handleSearch = (searchValue) => {
-        console.log(searchValue)
-    }
-
+const leftPane = ({ fileList, createFile }) => {
     return <div className="left_pane_container bg-light">
-        <SearchFile callBack={handleSearch}/>
+        <SearchFile />
         <FileList fileList={fileList} />
         <div className="row footer_btn">
-            <button type="button" className="col-6 text-dark  btn btn-primary">
+            <button type="button" onClick={createFile} className="col-6 text-dark  btn btn-primary">
                 <i className="iconfont icon-xinjian"></i>
                 新建
             </button>
@@ -27,7 +22,8 @@ const leftPane = ({ fileList }) => {
 }
 
 leftPane.propTypes = {
-    fileList: PropTypes.array
+    fileList: PropTypes.array,
+    createFile: PropTypes.func
 }
 
 leftPane.defaultProps = {
