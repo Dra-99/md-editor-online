@@ -1,0 +1,42 @@
+.tab_item {
+    border-radius: 4px;
+    border-right: 1px solid rgb(91, 91, 91);
+    min-width: 120px;
+    max-width: 150px;
+}
+
+.tab_item .title {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.tab_item:last-child {
+    border-right: none;
+}
+
+.tab_item .iconfont {
+    font-size: 14px;
+}
+
+.tab_item .iconfont.icon-cuowu {
+    cursor: pointer;
+    display: none;
+}
+
+.tab_item:hover .iconfont.icon-cuowu {
+    display: block;
+}
+
+.tab_item:hover .iconfont.icon-yuandianzhong {
+    display: none;
+}
+
+.iconfont.icon-yuandianzhong {
+    color: rgb(255, 124, 124);
+}
+
+.tabbar_container {
+    overflow: auto;
+}

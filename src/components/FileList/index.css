@@ -1,0 +1,4 @@
+.file_list_container {
+    overflow: auto;
+    height: calc(100% - 94px);
+}
