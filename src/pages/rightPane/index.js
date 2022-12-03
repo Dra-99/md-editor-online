@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useReducer, useRef } from "react"
+import React, { useEffect, useReducer } from "react"
 import TabBar from "../../components/TabBar"
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
@@ -38,7 +38,6 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
     const [state, dispatch] = useReducer(reducer, initialState)
     const activeFile = state.unsaveContent.find(item => item.id === currentOpen)
     const content = activeFile ? activeFile.content : ''
-    const editorRef = useRef(null)
 
     useEffect(() => {
         if (!currentFile.isRead) {
@@ -58,12 +57,10 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
 
     useEffect(() => {
         document.addEventListener('keydown', function(e){
-            console.log(e)
             if (e.key === 's' && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)){
                 // e.preventDefault();
                 alert('saved');
-                editorRef.current.focus()
-             }
+            }
         });
     }, [])
 
@@ -76,15 +73,19 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
     console.log(unsaveFiles)
 
     const handleContentChange = (val) => {
-        handleFileChange(val, currentOpen);
-        dispatch({
-            type: 'changeContent',
-            payload: {
-                id: currentOpen,
-                content: val
-            }
-        })
+        if (val !== content) {
+            handleFileChange(val, currentOpen);
+            dispatch({
+                type: 'changeContent',
+                payload: {
+                    id: currentOpen,
+                    content: val
+                }
+            })
+        }
     }
+    console.log(state.unsaveContent)
+
     return <div>
         <TabBar tabBarList={fileList} currentOpen={currentOpen} unsaveFiles={unsaveFiles} />
         <SimpleMDE
@@ -98,7 +99,6 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
                     return "Loading...";
                 }}
             }
-            ref={editorRef}
             onChange={val => handleContentChange(val)}
             value={content ? content : '请输入内容'}
         />
