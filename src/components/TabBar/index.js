@@ -10,7 +10,7 @@ const TabBar = ({ tabBarList, currentOpen, unsaveFiles }) => {
 
 TabBar.propTypes = {
     tabBarList: PropTypes.array,            
-    currentOpen: PropTypes.number,
+    currentOpen: PropTypes.string,
     unsaveFiles: PropTypes.array
 }
 

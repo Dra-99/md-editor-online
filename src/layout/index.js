@@ -5,60 +5,51 @@ import "./index.css"
 import { v4 as uuidv4 } from "uuid"
 import moment from "moment"
 import { changeArrToFlatten, changeFlattenToArr } from "../utils/flattenChange";
-
+import fsHelper from "../utils/fileHelper"
+const path = window.require('path')
+const app = window.require("@electron/remote").app;
+const documentPath = app.getPath("documents");
+const mdFilePath = path.resolve(documentPath, 'md')
+const Store = window.require("electron-store")
+export const store = new Store({name: 'md-list'})
 export const LayoutContext = createContext()
+
+const saveToStore = (file) => {
+    const newData = file.reduce((prev, item) => {
+        prev[item.id] = {
+            id: item.id,
+            path: item.path,
+            createAt: item.createAt,
+            title: item.title
+        }
+        return prev;
+    }, {})
+    store.set('files', newData)
+}
 
 const Layout = () => {
 
-    const defaultList = [
-        {
-            id: 1,
-            title: "哈哈哈",
-            body: "## 这是标题",
-            createAt: '222'
-        },
-        {
-            id:2,
-            title: "真不错1111111111",
-            body: "## 这是标题",
-            createAt: '222'
-        },
-        {
-            id: 3,
-            title: "还可以吧",
-            body: "## 这是标题",
-            createAt: '222'
-        },
-        {
-            id: 4,
-            title: "哈哈哈",
-            body: "## 这是标题",
-            createAt: '222'
-        },
-        {
-            id: 5,
-            title: "真不错1111111111",
-            body: "## 这是真的不错的啦·1",
-            createAt: '222'
-        },
-        {
-            id: 6,
-            title: "还可以吧",
-            body: "## 这是还可以吧",
-            createAt: '222'
-        }
-    ]
-    const [fileList, setFileList] = useState(defaultList)
+    const [fileList, setFileList] = useState(changeFlattenToArr(store.get('files')))
     const [openFileTab, setOpenFileTab] = useState([])
     const [currentOpen, setCurrentOpen] = useState() //当前正在打开的tab
     const [unsaveFiles, setUnSaveFiles] = useState([])
     const [searchFiles, setSearchFiles] = useState([])
+    // const [changeTabContent, setChangeTabContent] = useState(store.get("unsaveContent"))
 
     const handleFileSelect = (id) => {
         if (!openFileTab.find(item => item.id === id)) {
             setOpenFileTab([...openFileTab, fileList.find(item => item.id === id)])
         }
         setCurrentOpen(id)
+    }
+
+    const handleReadFile = (id) => {
+        setOpenFileTab(openFileTab.map(item => {
+            if (item.id === id) {
+                item.isRead = true;
+            }
+            return item;
+        }))
     }
 
     const closeTab = (id) => {
@@ -73,29 +64,40 @@ const Layout = () => {
         if (!unsaveFiles.includes(id)) {
             setUnSaveFiles([...unsaveFiles, id])
         }
-        setFileList(fileList.map(item => {
-            if (item.id === id) {
-                item.body = newContent;
-            }
-            return item
-        }))
     }
 
     const deleteFile = (id) => {
-        setFileList(fileList.filter(item => item.id !== id))
-        if (openFileTab.find(item => item.id === id)) {
-            setOpenFileTab(openFileTab.filter(item => item.id !== id))
-        }
+        const currentFile = fileList.find(item => item.id === id);
+        fsHelper.deleteFile(path.resolve(mdFilePath, `${currentFile.title}.md`)).then(() => {
+            const newData = fileList.filter(item => item.id !== id)
+            saveToStore(newData)
+            setFileList(newData)
+            if (openFileTab.find(item => item.id === id)) {
+                setOpenFileTab(openFileTab.filter(item => item.id !== id))
+            }
+        })
     }
-    console.log(fileList)
-    const editFileName = (newName, id, cb) => {
-        setFileList(fileList.map(item => {
+
+    const editFileName = async (newName, id, cb) => {
+        // 判断是新建还是重命名
+        const currentFile = fileList.find(item => item.id === id);
+        const newPath = path.resolve(mdFilePath, `${newName}.md`);
+        if (currentFile.isNew) {
+            // 新建
+            await fsHelper.writeFile(newPath, currentFile.body)
+        } else {
+            await fsHelper.renameFile(path.resolve(mdFilePath, `${currentFile.title}.md`), newPath);
+        }
+        const newData = fileList.map(item => {
             if (item.id === id) {
                 item.title = newName;
-                item.isNew = false
+                item.isNew = false;
+                item.path = newPath;
             }
             return item
-        }))
+        })
+        saveToStore(newData);
+        setFileList(newData)
         cb && cb()
     }
 
@@ -146,7 +148,13 @@ const Layout = () => {
                 </div> 
                 <div className="col-9 right_container">
                     {openFileTab.length ?
-                        <RightPane fileList={openFileTab} handleFileChange={handleFileChange} currentOpen={currentOpen} unsaveFiles={unsaveFiles} /> :
+                        <RightPane 
+                            fileList={openFileTab} 
+                            handleFileChange={handleFileChange}
+                            currentOpen={currentOpen} 
+                            unsaveFiles={unsaveFiles} 
+                            handleReadFile={handleReadFile}
+                        /> :
                         <div className="null_tip">请选择或新建md文件</div>
                     }
                 </div>

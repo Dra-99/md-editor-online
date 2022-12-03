@@ -1,13 +1,51 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import TabBar from "../../components/TabBar"
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import PropTypes from "prop-types"
+import fsHelper from "../../utils/fileHelper";
+// import { store } from "../../layout";
 
-const rightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange }) => {
-
+const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile }) => {
     const currentFile = fileList.find(item => item.id === currentOpen)
+    const [changeContent, setChangeContent] = useState([])
 
+    useEffect(() => {
+        if (!currentFile.isRead) {
+            fsHelper.readFile(currentFile.path).then(content => {
+                handleUnsaveContent(content)
+                handleReadFile(currentOpen)
+            })
+        }
+    }, [currentFile])
+
+    // 保存为更改内容的临时空间
+    const handleUnsaveContent = (content) => {
+        if (changeContent.find(item => item.id === currentOpen)) {
+            setChangeContent(changeContent.map(item => {
+                if (item.id === currentOpen) {
+                    item.content = content;
+                }
+                return item;
+            }))
+        } else {
+            const newData = [...changeContent, {
+                id: currentOpen,
+                content
+            }]
+            console.log(newData)
+            setChangeContent(newData)
+        }
+    }
+
+    const activeFile = changeContent.find(item => item.id === currentOpen);
+    const content = activeFile ? activeFile.content : ''
+
+    const handleContentChange = (val) => {
+        handleFileChange(val, currentOpen);
+        handleUnsaveContent(val)
+    }
+    console.log(changeContent)
     return <div>
         <TabBar tabBarList={fileList} currentOpen={currentOpen} unsaveFiles={unsaveFiles} />
         <SimpleMDE
@@ -15,21 +53,22 @@ const rightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange }) => 
                 maxHeight: '600px',
                 autofocus: true
             }}
-            onChange={val => handleFileChange(val, currentOpen)}
-            value={currentFile ? currentFile.body : '请输入内容'}
+            onChange={val => handleContentChange(val)}
+            value={content ? content : '请输入内容'}
         />
     </div>
 }
 
-rightPane.propTypes = {
+RightPane.propTypes = {
     fileList: PropTypes.array,
-    currentOpen: PropTypes.number,
+    currentOpen: PropTypes.string,
     unsaveFiles: PropTypes.array,
-    handleFileChange: PropTypes.func
+    handleFileChange: PropTypes.func,
+    handleReadFile: PropTypes.func
 }
 
-rightPane.defaultProps = {
+RightPane.defaultProps = {
     fileList: []
 }
 
-export default rightPane
+export default RightPane
