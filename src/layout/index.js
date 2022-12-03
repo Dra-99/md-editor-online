@@ -154,6 +154,7 @@ const Layout = () => {
                             currentOpen={currentOpen} 
                             unsaveFiles={unsaveFiles} 
                             handleReadFile={handleReadFile}
+                            setUnSaveFiles={setUnSaveFiles}
                         /> :
                         <div className="null_tip">请选择或新建md文件</div>
                     }
