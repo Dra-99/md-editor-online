@@ -6,8 +6,10 @@ import { v4 as uuidv4 } from "uuid"
 import moment from "moment"
 import { changeArrToFlatten, changeFlattenToArr } from "../utils/flattenChange";
 import fsHelper from "../utils/fileHelper"
+import message from "../utils/message";
 const path = window.require('path')
-const app = window.require("@electron/remote").app;
+const remote = window.require("@electron/remote");
+const app = remote.app;
 const documentPath = app.getPath("documents");
 const mdFilePath = path.resolve(documentPath, 'md')
 const Store = window.require("electron-store")
@@ -68,7 +70,7 @@ const Layout = () => {
 
     const deleteFile = (id) => {
         const currentFile = fileList.find(item => item.id === id);
-        fsHelper.deleteFile(path.resolve(mdFilePath, `${currentFile.title}.md`)).then(() => {
+        fsHelper.deleteFile(currentFile.path).then(() => {
             const newData = fileList.filter(item => item.id !== id)
             saveToStore(newData)
             setFileList(newData)
@@ -79,14 +81,21 @@ const Layout = () => {
     }
 
     const editFileName = async (newName, id, cb) => {
+        if (fileList.find(item => item.title === newName)) {
+            message('文件名已存在', 'info')
+            return
+        }
         // 判断是新建还是重命名
         const currentFile = fileList.find(item => item.id === id);
+        // 新建时的默认路径，取的是electron指定的目录
         const newPath = path.resolve(mdFilePath, `${newName}.md`);
         if (currentFile.isNew) {
             // 新建
             await fsHelper.writeFile(newPath, currentFile.body)
         } else {
-            await fsHelper.renameFile(path.resolve(mdFilePath, `${currentFile.title}.md`), newPath);
+            // 因为可能文件由外部导入，这里新路径情况是不确定的
+            const newPath = path.join(path.dirname(currentFile.path), `${newName}.md`)
+            await fsHelper.renameFile(currentFile.path, newPath);
         }
         const newData = fileList.map(item => {
             if (item.id === id) {
@@ -103,6 +112,7 @@ const Layout = () => {
 
     const createFile = () => {
         if (fileList.find(item => item.isNew)) {
+            message('完成当前新建文件', 'info')
             return;
         }
         const newFileList = [
@@ -121,6 +131,30 @@ const Layout = () => {
 
     const cancelCreate = () => {
         setFileList(fileList.filter(item => !item.isNew))
+    }
+
+    // 导入文件
+    const exportFile = () => {
+        remote.dialog.showOpenDialog({
+            title: '选择 md 文件',
+            properties: ['openFile', 'multiSelections'],
+            filters: [
+                { name: 'Markdown files', extensions: ['md'] }
+            ]
+        }).then(result => {
+            const filePaths = Array.from(result.filePaths);
+            // 过滤出未导入的路径
+            const fileteredPaths = filePaths.filter(path => fileList.find(item => item.path !== path));
+            const addFiles = fileteredPaths.map(p => ({
+                title: path.parse(p).name,
+                path: p,
+                id: uuidv4(),
+                createAt: moment().format('YYYY-MM-DD hh:mm:ss')
+            }))
+            const allFiles = fileList.concat(addFiles)
+            setFileList(allFiles);
+            saveToStore(allFiles)
+        })
     }
 
     // 文件搜索
@@ -144,7 +178,7 @@ const Layout = () => {
                 cancelCreate
             }}>
                 <div className="col-3 px-0 overflow-hidden">
-                    <LeftPane fileList={searchFiles.length ? searchFiles : fileList} createFile={createFile} />
+                    <LeftPane fileList={searchFiles.length ? searchFiles : fileList} createFile={createFile} exportFile={exportFile} />
                 </div> 
                 <div className="col-9 right_container">
                     {openFileTab.length ?

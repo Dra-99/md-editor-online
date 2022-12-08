@@ -97,6 +97,7 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
         <SimpleMDE
             options={{
                 minHeight: '550px',
+                maxHeight: '580px',
                 autofocus: true,
                 previewRender:(plainText, preview) => { // Async method
                     setTimeout(() => {
