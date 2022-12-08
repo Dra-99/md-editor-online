@@ -1,11 +1,12 @@
-import React, { useEffect, useReducer } from "react"
+import React, { useEffect, useReducer, useCallback } from "react"
 import TabBar from "../../components/TabBar"
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import PropTypes from "prop-types"
 import fsHelper from "../../utils/fileHelper";
 import * as marked from 'marked'
-// import { store } from "../../layout";
+import message from "../../utils/message";
+import { store } from "../../layout";
 
 const initialState = { unsaveContent: [] }
 
@@ -38,7 +39,7 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
     const [state, dispatch] = useReducer(reducer, initialState)
     const activeFile = state.unsaveContent.find(item => item.id === currentOpen)
     const content = activeFile ? activeFile.content : ''
-
+    const files = store.get('files');
     useEffect(() => {
         if (!currentFile.isRead) {
             fsHelper.readFile(currentFile.path).then(content => {
@@ -50,6 +51,12 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
                         content
                     }
                 })
+            }).catch(err => {
+                if (err) {
+                    message('文件不存在', 'error');
+                    delete files[currentFile.id];
+                    store.set('files', files)
+                }
             })
         }
     }, [currentFile])
@@ -70,9 +77,8 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
             setUnSaveFiles(unsaveFiles.filter(id => id !== currentOpen))
         });
     }
-    console.log(unsaveFiles)
-
-    const handleContentChange = (val) => {
+    
+    const handleContentChange = useCallback((val) => {
         if (val !== content) {
             handleFileChange(val, currentOpen);
             dispatch({
@@ -83,7 +89,7 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
                 }
             })
         }
-    }
+    }, [currentOpen])
     console.log(state.unsaveContent)
 
     return <div>

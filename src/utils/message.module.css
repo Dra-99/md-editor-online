@@ -1,0 +1,35 @@
+.div-container {
+    padding: 2px 20px;
+    background-color: rgb(13, 105, 244);
+    max-width: 200px;
+    height: 45px;
+    line-height: 45px;
+    text-align: center;
+    border-radius: 10px;
+    position: fixed;
+    transform: translate(-50%, -50%) translateY(25px);
+    left: 50%;
+    top: 50%;
+    top: 200px;
+    transition: .4s;
+    color: #fff;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.info {
+    background: #6b9eee;
+}
+
+.success {
+    background: #7ebf50;
+}
+
+.warn {
+    background: #dc6a12;
+}
+
+.error {
+    background: #cc3600;
+}
