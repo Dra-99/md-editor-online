@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useCallback } from "react"
+import React, { useEffect, useCallback, useMemo } from "react"
 import TabBar from "../../components/TabBar"
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
@@ -8,49 +8,15 @@ import * as marked from 'marked'
 import message from "../../utils/message";
 import { store } from "../../layout";
 
-const initialState = { unsaveContent: [] }
 
-const reducer = ({ unsaveContent }, { type, payload }) => {
-    switch(type) {
-        case 'initContent': 
-            if (unsaveContent.find(item => item.id === payload.id)) {
-                return { unsaveContent }
-            } else {
-                return {
-                    unsaveContent: [...unsaveContent, payload]
-                }
-            }
-        case 'changeContent': 
-            return { 
-                unsaveContent: unsaveContent.map(item => {
-                    if (item.id === payload.id) {
-                        item.content = payload.content
-                    }
-                    return item
-                })
-            }
-        default: 
-            return unsaveContent
-    }
-}
-
-const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile, setUnSaveFiles }) => {
+const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile, setUnSaveFiles, openFileTab }) => {
     const currentFile = fileList.find(item => item.id === currentOpen)
-    const [state, dispatch] = useReducer(reducer, initialState)
-    const activeFile = state.unsaveContent.find(item => item.id === currentOpen)
-    const content = activeFile ? activeFile.content : ''
+    const content = currentFile.content;
     const files = store.get('files');
     useEffect(() => {
-        if (!currentFile.isRead) {
+        if (currentFile && !currentFile.isRead) {
             fsHelper.readFile(currentFile.path).then(content => {
-                handleReadFile(currentOpen)
-                dispatch({
-                    type: 'initContent',
-                    payload: {
-                        id: currentOpen,
-                        content
-                    }
-                })
+                handleReadFile(currentOpen, content)
             }).catch(err => {
                 if (err) {
                     message('文件不存在', 'error');
@@ -59,7 +25,7 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
                 }
             })
         }
-    }, [currentFile])
+    }, [currentOpen])
 
 
     useEffect(() => {
@@ -72,8 +38,7 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
     }, [])
 
     const handleSave = () => {
-        const unsaveContent = state.unsaveContent.find(item => item.id === currentOpen);
-        fsHelper.writeFile(currentFile.path, unsaveContent.content).then(res => {
+        fsHelper.writeFile(currentFile.path, currentFile.content).then(res => {
             setUnSaveFiles(unsaveFiles.filter(id => id !== currentOpen))
         });
     }
@@ -81,31 +46,26 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
     const handleContentChange = useCallback((val) => {
         if (val !== content) {
             handleFileChange(val, currentOpen);
-            dispatch({
-                type: 'changeContent',
-                payload: {
-                    id: currentOpen,
-                    content: val
-                }
-            })
         }
     }, [currentOpen])
-    console.log(state.unsaveContent)
+    console.log(unsaveFiles)
+
+    const autofocusNoSpellcheckerOptions = useMemo(() => {
+        return {
+          autofocus: true,
+          spellChecker: false,
+          minHeight: '550px',
+          maxHeight: '580px',
+          previewRender:(plainText, preview) => { // Async method
+                return preview.innerHTML = marked.parse(plainText) ? marked.parse(plainText) : 'loading...';
+            }
+        }
+      }, []);
 
     return <div>
-        <TabBar tabBarList={fileList} currentOpen={currentOpen} unsaveFiles={unsaveFiles} />
+        <TabBar tabBarList={openFileTab} currentOpen={currentOpen} unsaveFiles={unsaveFiles} />
         <SimpleMDE
-            options={{
-                minHeight: '550px',
-                maxHeight: '580px',
-                autofocus: true,
-                previewRender:(plainText, preview) => { // Async method
-                    setTimeout(() => {
-                        preview.innerHTML = marked.parse(plainText);
-                    }, 250);
-                    return "Loading...";
-                }}
-            }
+            options={autofocusNoSpellcheckerOptions}
             onChange={val => handleContentChange(val)}
             value={content ? content : '请输入内容'}
         />
@@ -120,11 +80,13 @@ RightPane.propTypes = {
     currentOpen: PropTypes.string,
     unsaveFiles: PropTypes.array,
     handleFileChange: PropTypes.func,
-    handleReadFile: PropTypes.func
+    handleReadFile: PropTypes.func,
+    openFileTab: PropTypes.array
 }
 
 RightPane.defaultProps = {
-    fileList: []
+    fileList: [],
+    openFileTab: []
 }
 
 export default RightPane

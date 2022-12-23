@@ -1,4 +1,4 @@
-import React, { useState, useContext, createContext, useEffect, useCallback } from "react"
+import React, { useState, createContext, useEffect, useCallback } from "react"
 import LeftPane from "../pages/leftPane";
 import RightPane from "../pages/rightPane";
 import "./index.css"
@@ -45,10 +45,18 @@ const Layout = () => {
         setCurrentOpen(id)
     }
 
-    const handleReadFile = (id) => {
-        setOpenFileTab(openFileTab.map(item => {
+    const handleReadFile = (id, content) => {
+        // setOpenFileTab(openFileTab.map(item => {
+        //     if (item.id === id) {
+        //         item.isRead = true;
+        //         item.content = content;
+        //     }
+        //     return item;
+        // }))
+        setFileList(fileList.map(item => {
             if (item.id === id) {
                 item.isRead = true;
+                item.content = content;
             }
             return item;
         }))
@@ -66,7 +74,15 @@ const Layout = () => {
         if (!unsaveFiles.includes(id)) {
             setUnSaveFiles([...unsaveFiles, id])
         }
+        setFileList(fileList.map(item => {
+            if (item.id === id) {
+                item.isRead = true;
+                item.content = newContent;
+            }
+            return item;
+        }))
     }
+
 
     const deleteFile = (id) => {
         const currentFile = fileList.find(item => item.id === id);
@@ -153,7 +169,8 @@ const Layout = () => {
             }))
             const allFiles = fileList.concat(addFiles)
             setFileList(allFiles);
-            saveToStore(allFiles)
+            saveToStore(allFiles);
+            setSearchFiles([])
         })
     }
 
@@ -183,7 +200,8 @@ const Layout = () => {
                 <div className="col-9 right_container">
                     {openFileTab.length ?
                         <RightPane 
-                            fileList={openFileTab} 
+                            fileList={fileList} 
+                            openFileTab={openFileTab}
                             handleFileChange={handleFileChange}
                             currentOpen={currentOpen} 
                             unsaveFiles={unsaveFiles} 

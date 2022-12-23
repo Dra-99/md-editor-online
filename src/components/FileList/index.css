@@ -2,3 +2,9 @@
     overflow: auto;
     height: calc(100% - 94px);
 }
+
+.content-item {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
