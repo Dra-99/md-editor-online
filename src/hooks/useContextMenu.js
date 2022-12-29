@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 const remote = window.require("@electron/remote")
-const { Menu } = remote;
+const { Menu, MenuItem } = remote;
 
 
 const useContextMenu = (menuList = []) => {
     useEffect(() => {
         const menu = new Menu();
         menuList.forEach(item => {
-            menu.append(item);
+            menu.append(new MenuItem(item));
         })
         const showMenu = (e) => {
             // console.log(e)

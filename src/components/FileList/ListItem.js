@@ -3,7 +3,6 @@ import PropTypes from "prop-types"
 import { LayoutContext } from "../../layout/index"
 import "./index.css"
 import useContextMenu from "../../hooks/useContextMenu"
-const { MenuItem, Menu } = window.require("@electron/remote")
 
 const ListItem = ({ fileItem }) => {
 
@@ -13,24 +12,24 @@ const ListItem = ({ fileItem }) => {
     const { handleFileSelect, deleteFile, editFileName, cancelCreate } = useContext(LayoutContext)
 
     const menuList = [
-        new MenuItem({
+        {
             label: '打开',
             click:() => {
                 console.log("open")
             }
-        }),
-        new MenuItem({
+        },
+        {
             label: '重命名',
             click:() => {
                 console.log("rename")
             }
-        }),
-        new MenuItem({
+        },
+        {
             label: '删除',
             click:() => {
                 console.log("shanchu")
             }
-        })
+        }
     ]
 
     useContextMenu(menuList);

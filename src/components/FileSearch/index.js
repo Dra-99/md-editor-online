@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useContext } from "react"
 import PropTypes from "prop-types";
 import { useDebounceValue } from "../../utils/debounceValue";
 import { LayoutContext } from "../../layout";
+import useIpcRender from "../../hooks/useIpcRender";
 
 const SearchFile = ({ title = "我的云文件" }) => {
     const { handleFileSearch } = useContext(LayoutContext)
@@ -29,6 +30,10 @@ const SearchFile = ({ title = "我的云文件" }) => {
             inpRef.current.focus()
         }
     }, [isShowSearch])
+
+    useIpcRender({
+        'search-file': handleSearch
+    })
 
     useEffect(() => {
         const handleFun = (e) => {

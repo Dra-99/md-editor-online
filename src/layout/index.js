@@ -7,14 +7,30 @@ import moment from "moment"
 import { changeArrToFlatten, changeFlattenToArr } from "../utils/flattenChange";
 import fsHelper from "../utils/fileHelper"
 import message from "../utils/message";
+import useIpcRender from "../hooks/useIpcRender";
 const path = window.require('path')
 const remote = window.require("@electron/remote");
 const app = remote.app;
-const documentPath = app.getPath("documents");
-const mdFilePath = path.resolve(documentPath, 'md')
 const Store = window.require("electron-store")
 export const store = new Store({name: 'md-list'})
+const settingStore = new Store({ name: "settings" })
+console.log(settingStore.get('path'))
+const mdFilePath = settingStore.get('path') || app.getPath("documents");
+// const mdFilePath = path.resolve(documentPath, 'md')
 export const LayoutContext = createContext()
+
+//   // fs.mkdir(app.getPath("documents"));
+//   let filePath = path.join(app.getPath("documents"), 'md')
+//   // 判断文件是否存在
+//   fs.access(filePath, fs.constants.F_OK, function (err) {
+//     if (err) {
+//       fs.mkdir(filePath, function (err) {
+//         if (err) {
+//           console.log(err)
+//         }
+//       })
+//     }
+//   });
 
 const saveToStore = (file) => {
     const newData = file.reduce((prev, item) => {
@@ -182,6 +198,11 @@ const Layout = () => {
     useEffect(() => {
         setCurrentOpen(openFileTab.length > 0 ? openFileTab[openFileTab.length - 1].id : undefined)
     }, [openFileTab])
+
+    useIpcRender({
+        'create-new-file': createFile,
+        'import-file': exportFile
+    })
 
     return <div className="content">
         <div className="row">

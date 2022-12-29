@@ -7,6 +7,7 @@ import fsHelper from "../../utils/fileHelper";
 import * as marked from 'marked'
 import message from "../../utils/message";
 import { store } from "../../layout";
+import useIpcRender from "../../hooks/useIpcRender";
 
 
 const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile, setUnSaveFiles, openFileTab }) => {
@@ -27,20 +28,12 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
         }
     }, [currentOpen])
 
-
-    useEffect(() => {
-        document.addEventListener('keydown', function(e){
-            if (e.key === 's' && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)){
-                // e.preventDefault();
-                alert('saved');
-            }
-        });
-    }, [])
-
     const handleSave = () => {
-        fsHelper.writeFile(currentFile.path, currentFile.content).then(res => {
-            setUnSaveFiles(unsaveFiles.filter(id => id !== currentOpen))
-        });
+        if (unsaveFiles.includes(currentOpen)) {
+            fsHelper.writeFile(currentFile.path, currentFile.content).then(res => {
+                setUnSaveFiles(unsaveFiles.filter(id => id !== currentOpen))
+            });
+        }
     }
     
     const handleContentChange = useCallback((val) => {
@@ -48,7 +41,10 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
             handleFileChange(val, currentOpen);
         }
     }, [currentOpen])
-    console.log(unsaveFiles)
+    
+    useIpcRender({
+        'save-edit-file': handleSave
+    })
 
     const autofocusNoSpellcheckerOptions = useMemo(() => {
         return {
@@ -69,9 +65,6 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
             onChange={val => handleContentChange(val)}
             value={content ? content : '请输入内容'}
         />
-        <div onClick={handleSave} className="text-center d-block btn btn-primary">
-            保存
-        </div>
     </div>
 }
 
