@@ -8,6 +8,10 @@ import * as marked from 'marked'
 import message from "../../utils/message";
 import { store } from "../../layout";
 import useIpcRender from "../../hooks/useIpcRender";
+import "./index.css"
+const Store = window.require("electron-store");
+const settingStore = new Store({ name: 'settings' })
+const { ipcRenderer } = window.require("electron")
 
 
 const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile, setUnSaveFiles, openFileTab }) => {
@@ -30,9 +34,16 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
 
     const handleSave = () => {
         if (unsaveFiles.includes(currentOpen)) {
-            fsHelper.writeFile(currentFile.path, currentFile.content).then(res => {
+            const { content, path, title } = currentFile;
+            fsHelper.writeFile(path, content).then(res => {
                 setUnSaveFiles(unsaveFiles.filter(id => id !== currentOpen))
             });
+            if (settingStore.get("enableAutoSync")) {
+                ipcRenderer.send("upload-file-sync", { 
+                    key: `${title}.md`,
+                    path
+                })
+            }
         }
     }
     
@@ -58,13 +69,14 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
         }
       }, []);
 
-    return <div>
+    return <div className="md-area">
         <TabBar tabBarList={openFileTab} currentOpen={currentOpen} unsaveFiles={unsaveFiles} />
         <SimpleMDE
             options={autofocusNoSpellcheckerOptions}
             onChange={val => handleContentChange(val)}
             value={content ? content : '请输入内容'}
         />
+        <div className="sync-tip">{currentFile.isSynced && `已同步，同步时间：${currentFile.updateAt}`}</div>
     </div>
 }
 

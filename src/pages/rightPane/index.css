@@ -1,0 +1,10 @@
+.md-area {
+    position: relative;
+}
+
+.sync-tip {
+    position: absolute;
+    bottom: 5px;
+    font-size: 14px;
+    color: rgb(165, 165, 165);
+}

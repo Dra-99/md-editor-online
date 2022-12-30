@@ -1,8 +1,11 @@
 const remote = window.require("@electron/remote");
 const Store = window.require("electron-store")
+const { ipcRenderer } = window.require("electron")
 const store = new Store({
     name: 'settings'
 })
+
+const saveDataDOM = ['#savedFileLocation', '#accessKey', '#secretKey', '#bucketName']
 
 const $ = (classOrId) => {
     const result = document.querySelectorAll(classOrId);
@@ -10,22 +13,31 @@ const $ = (classOrId) => {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    let savePath = store.get('path');
-    if (savePath) {
-        $('#savedFileLocation').value = savePath;
-    }
+    saveDataDOM.forEach(item => {
+        const value = store.get(item.substring(1));
+        if (value) {
+            $(item).value = value;
+        }
+    })
     $('#select-new-location').addEventListener('click', () => {
         remote.dialog.showOpenDialog({
             title: '选择存储文件路径',
             properties: ['openDirectory']
         }).then(res => {
-            savePath = res.filePaths[0];
+            const savePath = res.filePaths[0];
             $('#savedFileLocation').value = savePath || '';
         })
     })
     $('.btn-primary').addEventListener('click', (e) => {
         e.preventDefault()
-        store.set('path', savePath);
+        saveDataDOM.forEach(item => {
+            const currentEle = $(item);
+            if (currentEle) {
+                const { id, value } = currentEle;
+                store.set(id, value ? value : '');
+            }
+        })
+        ipcRenderer.send('update-all-menu')
         remote.getCurrentWindow().close()
     })
     $('.nav-tabs').addEventListener('click', (e) => {

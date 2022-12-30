@@ -1,9 +1,12 @@
 const qiniu = require("qiniu")
 const axios = require("axios")
+const Store = require("electron-store")
 const fs = require("fs")
+const settingStore = new Store({ name: 'settings' })
 
 class QiniuyunManage {
     constructor(accessKey, secretKey, bucket) {
+        console.log(accessKey, secretKey, bucket)
         this.bucket = bucket;
         this.mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
         this.config = new qiniu.conf.Config();
@@ -84,6 +87,12 @@ class QiniuyunManage {
         })
     }
 
+    getStat(key) {
+        return new Promise((resolve, reject) => {
+            this.bucketManager.stat(this.bucket, key, this._handleCallback(resolve, reject))
+        })
+    }
+
     _handleCallback(resolve, reject) {
         return (respErr, respBody, respInfo) => {
             if (respErr) {
@@ -101,4 +110,8 @@ class QiniuyunManage {
     }
 }
 
-module.exports = QiniuyunManage
+const createQiniuManage = () => {
+    return new QiniuyunManage(settingStore.get('accessKey'), settingStore.get('secretKey'), settingStore.get('bucketName'))
+}
+
+module.exports = createQiniuManage

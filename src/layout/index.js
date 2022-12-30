@@ -14,10 +14,10 @@ const app = remote.app;
 const Store = window.require("electron-store")
 export const store = new Store({name: 'md-list'})
 const settingStore = new Store({ name: "settings" })
-console.log(settingStore.get('path'))
-const mdFilePath = settingStore.get('path') || app.getPath("documents");
+let mdFilePath = settingStore.get('savedFileLocation') || app.getPath("documents");
 // const mdFilePath = path.resolve(documentPath, 'md')
 export const LayoutContext = createContext()
+const { ipcRenderer } = window.require("electron")
 
 //   // fs.mkdir(app.getPath("documents"));
 //   let filePath = path.join(app.getPath("documents"), 'md')
@@ -38,7 +38,9 @@ const saveToStore = (file) => {
             id: item.id,
             path: item.path,
             createAt: item.createAt,
-            title: item.title
+            title: item.title,
+            isSynced: !!item.isSynced,
+            updateAt: item.updateAt
         }
         return prev;
     }, {})
@@ -54,11 +56,21 @@ const Layout = () => {
     const [searchFiles, setSearchFiles] = useState([])
     // const [changeTabContent, setChangeTabContent] = useState(store.get("unsaveContent"))
 
+    settingStore.onDidAnyChange(() => {
+        console.log('changed')
+        mdFilePath = settingStore.get('savedFileLocation') || app.getPath("documents");
+    })
+
     const handleFileSelect = (id) => {
+        const currentFile = fileList.find(item => item.id === id);
+        const { path, title, id: fid } = currentFile;
         if (!openFileTab.find(item => item.id === id)) {
             setOpenFileTab([...openFileTab, fileList.find(item => item.id === id)])
         }
         setCurrentOpen(id)
+        if (settingStore.get('enableAutoSync')) {
+            ipcRenderer.send('download-file-sync', { key: `${title}.md`, path, id: fid })
+        }
     }
 
     const handleReadFile = (id, content) => {
@@ -199,9 +211,61 @@ const Layout = () => {
         setCurrentOpen(openFileTab.length > 0 ? openFileTab[openFileTab.length - 1].id : undefined)
     }, [openFileTab])
 
+    const handleFileSyncUpdated = () => {
+        const newFileList = fileList.map(item => {
+            if (item.id === currentOpen) {
+                item = {
+                    ...item,
+                    isSynced: true,
+                    updateAt: moment().format('YYYY-MM-DD hh:mm:ss')
+                }
+            }
+            return item;
+        })
+        setFileList(newFileList);
+        saveToStore(newFileList)
+    }
+
+    const activeFileDownloaded = (event, message) => {
+        const currentFile = fileList.find(item => item.id === message.id);
+        const { id, path } = currentFile
+        fsHelper.readFile(path).then(value => {
+          let newFile
+          if (message.status === 'download-success') {
+            newFile = fileList.map(item => {
+                if (item.id === id) {
+                    item = {
+                        ...item,
+                        content: value,
+                        isLoad: true,
+                        isSynced: true,
+                        updateAt: moment().format('YYYY-MM-DD hh:mm:ss')
+                    }
+                }
+                return item
+            })
+          } else {
+            newFile = fileList.map(item => {
+                if (item.id === id) {
+                    item = {
+                        ...item,
+                        content: value,
+                        isLoad: true
+                    }
+                }
+                return item;
+            })
+          }
+          setFileList(newFile)
+          saveToStore(newFile)
+        })
+    }
+
     useIpcRender({
         'create-new-file': createFile,
-        'import-file': exportFile
+        'import-file': exportFile,
+        'file-sync-updated': handleFileSyncUpdated,
+        'file-downloaded': activeFileDownloaded,
     })
 
     return <div className="content">
