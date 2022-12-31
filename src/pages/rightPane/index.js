@@ -14,10 +14,9 @@ const settingStore = new Store({ name: 'settings' })
 const { ipcRenderer } = window.require("electron")
 
 
-const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile, setUnSaveFiles, openFileTab }) => {
-    const currentFile = fileList.find(item => item.id === currentOpen)
+const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handleReadFile, setUnSaveFiles, openFileTab, handleUnsedFile }) => {
+    const currentFile = fileList.find(item => item.id === currentOpen) ?? {}
     const content = currentFile.content;
-    const files = store.get('files');
     useEffect(() => {
         if (currentFile && !currentFile.isRead) {
             fsHelper.readFile(currentFile.path).then(content => {
@@ -25,8 +24,7 @@ const RightPane = ({ fileList, currentOpen, unsaveFiles, handleFileChange, handl
             }).catch(err => {
                 if (err) {
                     message('文件不存在', 'error');
-                    delete files[currentFile.id];
-                    store.set('files', files)
+                    handleUnsedFile(currentFile.id)
                 }
             })
         }
@@ -86,7 +84,8 @@ RightPane.propTypes = {
     unsaveFiles: PropTypes.array,
     handleFileChange: PropTypes.func,
     handleReadFile: PropTypes.func,
-    openFileTab: PropTypes.array
+    openFileTab: PropTypes.array,
+    handleUnsedFile: PropTypes.func
 }
 
 RightPane.defaultProps = {

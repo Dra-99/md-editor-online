@@ -2,16 +2,18 @@ const qiniu = require("qiniu")
 const axios = require("axios")
 const Store = require("electron-store")
 const fs = require("fs")
-const settingStore = new Store({ name: 'settings' })
+const settingStore = new Store({
+    name: 'settings'
+})
 
 class QiniuyunManage {
     constructor(accessKey, secretKey, bucket) {
-        console.log(accessKey, secretKey, bucket)
         this.bucket = bucket;
         this.mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
         this.config = new qiniu.conf.Config();
         // 空间对应的机房
         this.config.zone = qiniu.zone.Zone_z0;
+        this.cdnManager = new qiniu.cdn.CdnManager(this.mac);
         this.bucketManager = new qiniu.rs.BucketManager(this.mac, this.config);
     }
 
@@ -63,16 +65,20 @@ class QiniuyunManage {
         // step 3 create a writable stream and pipe to it
         // step 4 return a promise based result
         return this.generateDownloadLink(key).then(link => {
-            const timeStamp = new Date().getTime()
-            const url = `${link}?timestamp=${timeStamp}`
-            return axios({
-                url,
-                method: 'GET',
-                responseType: 'stream',
-                headers: {
-                    'Cache-Control': 'no-cache'
-                }
-            })
+            return new Promise((resolve, reject) => {
+                this.cdnManager.refreshUrls([link], this._handleCallback(resolve, reject))
+            }).then(res => {
+                const timeStamp = new Date().getTime()
+                const url = `${link}?timestamp=${timeStamp}`
+                return axios({
+                    url,
+                    method: 'GET',
+                    responseType: 'stream',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                })
+            }).catch(err => console.log(err))
         }).then(response => {
             const writer = fs.createWriteStream(downloadPath)
             response.data.pipe(writer)

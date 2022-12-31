@@ -3,6 +3,7 @@ import PropTypes from "prop-types"
 import { LayoutContext } from "../../layout/index"
 import "./index.css"
 import useContextMenu from "../../hooks/useContextMenu"
+import message from "../../utils/message"
 
 const ListItem = ({ fileItem }) => {
 
@@ -34,22 +35,6 @@ const ListItem = ({ fileItem }) => {
 
     useContextMenu(menuList);
 
-    // useEffect(() => {
-    //     const menu = new Menu();
-    //     let isOpen = false;
-    //     if (isOpen) return;
-    //     menu.append(new MenuItem({
-    //         label: "哈哈"
-    //     }))
-    //     window.addEventListener("contextmenu", (e) => {
-    //         console.log(e)
-    //         if (e) {
-    //             isOpen = true;
-    //         }
-    //         menu.popup()
-    //     })
-    // }, [])
-
     const handleEdit = () => {
         if (!isEdit) {
             setIsEdit(fileItem.title)
@@ -72,7 +57,10 @@ const ListItem = ({ fileItem }) => {
     }
 
     const changeFileName = () => {
-        if (!editValue.trim().length) return;
+        if (!editValue.trim().length) {
+            message('文件名不能为空', 'error');
+            return;
+        };
         editFileName(editValue, fileItem.id, () => {
             setIsEdit(false)
         })

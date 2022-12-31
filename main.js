@@ -74,7 +74,6 @@ const createWindow = () => {
       let localUpdatedTime = filesObj[id].updateAt;
       // 将日期转为时间戳
       localUpdatedTime = new Date(localUpdatedTime).getTime();
-      console.log(serverUpdatedTime, localUpdatedTime)
       if (serverUpdatedTime > localUpdatedTime || !localUpdatedTime) {
         manager.downloadFile(key, path).then(() => {
           mainWindow.webContents.send('file-downloaded', {status: 'download-success', id})
@@ -83,7 +82,6 @@ const createWindow = () => {
         mainWindow.webContents.send('file-downloaded', {status: 'no-new-file', id})
       }
     }, (error) => {  
-      console.log(error)
       if (error.statusCode === 612) {
         mainWindow.webContents.send('file-downloaded', {status: 'no-file', id})
       }

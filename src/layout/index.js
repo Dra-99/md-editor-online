@@ -124,6 +124,15 @@ const Layout = () => {
         })
     }
 
+    const handleUnsedFile = (id) => {
+        const newFileList = fileList.filter(item => item.id !== id);
+        setFileList(newFileList);
+        saveToStore(newFileList)
+        setCurrentOpen(fileList.length ? fileList[0].id : undefined)
+        setOpenFileTab(openFileTab.filter(item => item.id !== id))
+        setSearchFiles([])
+    }
+
     const editFileName = async (newName, id, cb) => {
         if (fileList.find(item => item.title === newName)) {
             message('文件名已存在', 'info')
@@ -292,6 +301,7 @@ const Layout = () => {
                             unsaveFiles={unsaveFiles} 
                             handleReadFile={handleReadFile}
                             setUnSaveFiles={setUnSaveFiles}
+                            handleUnsedFile={handleUnsedFile}
                         /> :
                         <div className="null_tip">请选择或新建md文件</div>
                     }
