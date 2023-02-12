@@ -1,6 +1,5 @@
 <<<<<<< HEAD
 # md-editor-online
-#### xxxxx
 =======
 # Getting Started with Create React App
 
